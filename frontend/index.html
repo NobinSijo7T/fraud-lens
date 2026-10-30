@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>FraudLens | Home</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <a class="brand" href="index.html"><span>✦</span> FraudLens</a>
+    <nav>
+      <a class="active" href="index.html">Home</a>
+      <a href="pages/analyze.html">Analyze</a>
+      <a href="pages/history.html">History</a>
+    </nav>
+  </header>
+  <main>
+    <section class="hero">
+      <div>
+        <p class="eyebrow">DIGITAL RISK INTELLIGENCE</p>
+        <h1>Spot risk,<br><em>before it spreads.</em></h1>
+        <p class="lede">Screen suspicious transactions and phishing links with clear, evidence-based risk assessments from one workspace.</p>
+        <div class="hero-actions">
+          <a class="button" href="pages/analyze.html">Analyze risk <span>→</span></a>
+          <a class="button-outlined" href="pages/analyze.html?task=phishing">Check a phishing link</a>
+        </div>
+      </div>
+      <div class="hero-art">
+        <div class="ring"></div>
+        <div class="shield">✓</div>
+        <div class="float-card">LIVE MODEL<br><strong id="hero-model">Loading…</strong></div>
+      </div>
+    </section>
+    <div id="message" class="message hidden"></div>
+  </main>
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

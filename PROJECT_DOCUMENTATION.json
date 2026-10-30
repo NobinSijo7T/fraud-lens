@@ -1,0 +1,920 @@
+{
+  "project_name": "FraudLens - Digital Scam and Fraud Analysis System",
+  "version": "1.0.0",
+  "description": "A comprehensive machine learning system for detecting transaction fraud and phishing URLs using ensemble methods and real-time prediction APIs",
+
+  "datasets_and_model_results": {
+    "transaction_fraud": {
+      "dataset_file": "datasets/paysim/PS_20174392719_1491204439457_log.csv",
+      "dataset_type": "PaySim synthetic mobile-money transaction dataset",
+      "target": "isFraud (0 = legitimate, 1 = fraud)",
+      "user_input_fields": {
+        "type": "Transaction type",
+        "amount": "Transaction amount",
+        "oldbalanceOrg": "Sender balance before transaction",
+        "newbalanceOrig": "Sender balance after transaction",
+        "oldbalanceDest": "Receiver balance before transaction",
+        "newbalanceDest": "Receiver balance after transaction"
+      },
+      "excluded_fields": {
+        "step": "PaySim simulation time; excluded from the user-facing model",
+        "nameOrig": "Account identifier; excluded from model input",
+        "nameDest": "Account identifier; excluded from model input",
+        "isFraud": "Target label; never used as an input",
+        "isFlaggedFraud": "Dataset/business-rule flag; excluded from user input"
+      },
+      "training_process": {
+        "duplicate_rows_removed": true,
+        "legitimate_rows_sampled_for_local_training": 200000,
+        "all_fraud_rows_retained": true,
+        "test_size": 0.2,
+        "random_state": 42,
+        "categorical_encoding": "One-hot encoding for transaction type",
+        "numeric_processing": "Median imputation and standard scaling"
+      },
+      "algorithms_trained": ["Logistic Regression", "Decision Tree", "Random Forest"],
+      "selected_model": "Random Forest",
+      "model_version": "fraud_random_forest_v1",
+      "results": {
+        "accuracy": 0.996878,
+        "precision": 0.938551,
+        "recall": 0.985393,
+        "f1_score": 0.961401,
+        "balanced_accuracy": 0.991371,
+        "roc_auc": 0.999018,
+        "pr_auc": 0.992774,
+        "false_positive_rate": 0.00265
+      }
+    },
+    "phishing_url": {
+      "dataset_file": "datasets/phishing_links_url/Dataset.csv",
+      "dataset_type": "Engineered URL phishing classification dataset",
+      "target": "label (0 = legitimate, 1 = phishing)",
+      "processing": "Raw URL strings are parsed by the backend into 22 numeric URL features before prediction",
+      "model_features": ["url_len", "dom_len", "is_ip", "tld_len", "subdom_cnt", "letter_cnt", "digit_cnt", "special_cnt", "eq_cnt", "qm_cnt", "amp_cnt", "dot_cnt", "dash_cnt", "under_cnt", "letter_ratio", "digit_ratio", "spec_ratio", "is_https", "slash_cnt", "entropy", "path_len", "query_len"],
+      "algorithms_trained": ["Logistic Regression", "Decision Tree", "Random Forest"],
+      "selected_model": "Random Forest",
+      "model_version": "phishing_random_forest_v1",
+      "results": {
+        "accuracy": 0.980301,
+        "precision": 0.945828,
+        "recall": 0.915612,
+        "f1_score": 0.930475,
+        "balanced_accuracy": 0.953396,
+        "roc_auc": 0.992973,
+        "pr_auc": 0.976133,
+        "false_positive_rate": 0.00882
+      },
+      "additional_safeguards": [
+        "Feature extraction is aligned with the dataset parser",
+        "Exact trusted-domain safeguard for known domains such as github.com",
+        "IP-host URLs receive a high-risk safeguard"
+      ]
+    }
+  },
+  
+  "system_architecture": {
+    "overview": "Full-stack web application with FastAPI backend, vanilla JavaScript frontend, and SQLite database for prediction history",
+    "components": {
+      "frontend": {
+        "technology": "HTML5, CSS3, Vanilla JavaScript",
+        "framework": "None (Lightweight, no dependencies)",
+        "pages": [
+          {
+            "name": "Dashboard",
+            "path": "index.html",
+            "purpose": "Overview of datasets, model status, and recent predictions"
+          },
+          {
+            "name": "Analyze",
+            "path": "pages/analyze.html",
+            "purpose": "Real-time fraud and phishing prediction interface"
+          },
+          {
+            "name": "Datasets",
+            "path": "pages/datasets.html",
+            "purpose": "Dataset exploration and model training triggers"
+          },
+          {
+            "name": "Evaluation",
+            "path": "pages/evaluation.html",
+            "purpose": "Model performance metrics and comparison"
+          },
+          {
+            "name": "History",
+            "path": "pages/history.html",
+            "purpose": "Browse and manage past predictions"
+          }
+        ],
+        "features": [
+          "Dynamic form generation based on model features",
+          "Real-time risk assessment visualization",
+          "Task switching between fraud and phishing detection",
+          "Model training progress tracking",
+          "Prediction history management"
+        ]
+      },
+      "backend": {
+        "technology": "Python 3.x",
+        "framework": "FastAPI",
+        "server": "Uvicorn ASGI server",
+        "structure": {
+          "main_app": "backend/app/main.py",
+          "services": [
+            {
+              "name": "dataset_service.py",
+              "responsibilities": [
+                "Load and validate datasets",
+                "Generate dataset summaries",
+                "Detect target columns automatically",
+                "Handle multiple dataset formats"
+              ]
+            },
+            {
+              "name": "training_service.py",
+              "responsibilities": [
+                "Train multiple ML models in parallel",
+                "Automatic feature engineering",
+                "Model evaluation and selection",
+                "Artifact and metadata management",
+                "Support both fraud and phishing tasks"
+              ]
+            },
+            {
+              "name": "prediction_service.py",
+              "responsibilities": [
+                "Load trained models",
+                "Validate input features",
+                "Generate predictions with probabilities",
+                "Risk level assignment",
+                "Prediction history persistence"
+              ]
+            }
+          ]
+        },
+        "database": {
+          "type": "SQLite",
+          "file": "app.db",
+          "tables": {
+            "predictions": {
+              "columns": [
+                "id (INTEGER PRIMARY KEY)",
+                "created_at (TEXT)",
+                "payload (TEXT/JSON)",
+                "result (TEXT/JSON)"
+              ],
+              "purpose": "Store all predictions for history and audit trail"
+            }
+          }
+        }
+      }
+    }
+  },
+
+  "machine_learning_pipeline": {
+    "overview": "Multi-model ensemble approach with automatic model selection based on performance metrics",
+    
+    "data_preprocessing": {
+      "steps": [
+        {
+          "step": 1,
+          "name": "Data Loading",
+          "description": "Load CSV datasets using pandas",
+          "operations": [
+            "Read dataset from filesystem",
+            "Detect encoding automatically",
+            "Handle missing values"
+          ]
+        },
+        {
+          "step": 2,
+          "name": "Duplicate Removal",
+          "description": "Remove duplicate rows to prevent data leakage",
+          "operations": [
+            "Identify duplicate records",
+            "Keep first occurrence",
+            "Reset index after removal"
+          ]
+        },
+        {
+          "step": 3,
+          "name": "Target Identification",
+          "description": "Automatically detect the target column",
+          "logic": "Look for columns named: Class, label, fraud, is_fraud, target (case-insensitive)"
+        },
+        {
+          "step": 4,
+          "name": "Feature Selection",
+          "description": "For phishing task, select only numeric features (URL statistics)",
+          "reason": "Raw URL strings are excluded; only engineered numeric features are used"
+        },
+        {
+          "step": 5,
+          "name": "Feature Type Detection",
+          "description": "Separate features into numeric and categorical",
+          "numeric_features": "Continuous and discrete numerical values",
+          "categorical_features": "Text labels and categories"
+        },
+        {
+          "step": 6,
+          "name": "Train-Test Split",
+          "method": "sklearn.train_test_split",
+          "parameters": {
+            "test_size": 0.2,
+            "random_state": 42,
+            "stratify": "target variable (preserves class distribution)"
+          }
+        }
+      ],
+      
+      "preprocessing_pipeline": {
+        "name": "ColumnTransformer",
+        "numeric_transformer": {
+          "steps": [
+            {
+              "name": "SimpleImputer",
+              "strategy": "median",
+              "purpose": "Handle missing values in numeric features"
+            },
+            {
+              "name": "StandardScaler",
+              "purpose": "Normalize features to mean=0, std=1",
+              "reason": "Improves convergence for gradient-based algorithms"
+            }
+          ]
+        },
+        "categorical_transformer": {
+          "steps": [
+            {
+              "name": "SimpleImputer",
+              "strategy": "most_frequent",
+              "purpose": "Handle missing values in categorical features"
+            },
+            {
+              "name": "OneHotEncoder",
+              "parameters": {
+                "handle_unknown": "ignore"
+              },
+              "purpose": "Convert categorical variables to binary vectors"
+            }
+          ]
+        }
+      }
+    },
+
+    "algorithms": {
+      "overview": "Three complementary algorithms are trained for each task, and the best performer is automatically selected",
+      
+      "models": [
+        {
+          "name": "Logistic Regression",
+          "type": "Linear classifier",
+          "sklearn_class": "LogisticRegression",
+          "hyperparameters": {
+            "max_iter": 300,
+            "class_weight": "balanced",
+            "solver": "liblinear"
+          },
+          "strengths": [
+            "Fast training and prediction",
+            "Interpretable coefficients",
+            "Probabilistic outputs",
+            "Works well with linearly separable data"
+          ],
+          "weaknesses": [
+            "Assumes linear decision boundary",
+            "May underfit complex patterns"
+          ],
+          "use_case": "Baseline model, good for simple patterns",
+          "algorithm_details": {
+            "principle": "Logistic function (sigmoid) maps linear combination of features to probability",
+            "formula": "P(y=1|X) = 1 / (1 + e^(-w·X + b))",
+            "optimization": "Minimizes log loss using gradient descent",
+            "decision_boundary": "Linear hyperplane in feature space"
+          }
+        },
+        {
+          "name": "Decision Tree",
+          "type": "Non-linear classifier",
+          "sklearn_class": "DecisionTreeClassifier",
+          "hyperparameters": {
+            "max_depth": 12,
+            "class_weight": "balanced",
+            "random_state": 42
+          },
+          "strengths": [
+            "Captures non-linear relationships",
+            "No feature scaling needed",
+            "Handles mixed data types naturally",
+            "Interpretable decision rules"
+          ],
+          "weaknesses": [
+            "Prone to overfitting without depth limits",
+            "Can be unstable (high variance)"
+          ],
+          "use_case": "Captures complex interactions between features",
+          "algorithm_details": {
+            "principle": "Recursively partition feature space using binary splits",
+            "splitting_criterion": "Gini impurity or entropy",
+            "gini_formula": "Gini = 1 - Σ(p_i²) where p_i is class probability",
+            "tree_construction": [
+              "Select feature and threshold that maximizes information gain",
+              "Split node into two children",
+              "Repeat recursively until max_depth or purity reached",
+              "Leaf nodes predict majority class"
+            ],
+            "pruning": "Max depth constraint prevents overfitting"
+          }
+        },
+        {
+          "name": "Random Forest",
+          "type": "Ensemble classifier (bagging)",
+          "sklearn_class": "RandomForestClassifier",
+          "hyperparameters": {
+            "n_estimators": 120,
+            "max_depth": 18,
+            "class_weight": "balanced_subsample",
+            "n_jobs": -1,
+            "random_state": 42
+          },
+          "strengths": [
+            "Highly accurate on complex datasets",
+            "Reduces overfitting through averaging",
+            "Robust to noise and outliers",
+            "Provides feature importance rankings"
+          ],
+          "weaknesses": [
+            "Slower training than single trees",
+            "Less interpretable (black box)",
+            "Higher memory usage"
+          ],
+          "use_case": "Best overall performance for fraud detection",
+          "algorithm_details": {
+            "principle": "Ensemble of decision trees trained on bootstrapped samples",
+            "bootstrap_sampling": "Each tree trained on random sample with replacement",
+            "feature_randomness": "At each split, consider random subset of features (√n_features)",
+            "prediction_aggregation": "Majority vote (classification) or average (regression)",
+            "advantages_over_single_tree": [
+              "Variance reduction through averaging",
+              "Decorrelation of trees via random feature selection",
+              "Out-of-bag error estimation for validation"
+            ],
+            "feature_importance": "Measured by mean decrease in impurity across all trees"
+          }
+        }
+      ],
+
+      "model_selection_process": {
+        "description": "Automatic selection of best model based on evaluation metrics",
+        "primary_criteria": [
+          "Recall (sensitivity) - prioritized for fraud detection",
+          "F1 Score - balance of precision and recall"
+        ],
+        "selection_logic": "Model with highest (recall, f1_score) tuple is selected",
+        "rationale": "In fraud detection, catching fraudulent cases (recall) is more important than minimizing false positives"
+      }
+    },
+
+    "evaluation_metrics": {
+      "description": "Comprehensive metrics calculated on held-out test set (20% of data)",
+      
+      "metrics": [
+        {
+          "name": "Accuracy",
+          "formula": "(TP + TN) / (TP + TN + FP + FN)",
+          "interpretation": "Overall correctness, but can be misleading with imbalanced data",
+          "typical_range": "95-98% for this project"
+        },
+        {
+          "name": "Precision",
+          "formula": "TP / (TP + FP)",
+          "interpretation": "Of predicted frauds, how many are actual frauds",
+          "importance": "High precision reduces false alarms"
+        },
+        {
+          "name": "Recall (Sensitivity)",
+          "formula": "TP / (TP + FN)",
+          "interpretation": "Of actual frauds, how many did we catch",
+          "importance": "PRIMARY METRIC - Missing fraud is costly",
+          "typical_range": "85-95% for this project"
+        },
+        {
+          "name": "F1 Score",
+          "formula": "2 × (Precision × Recall) / (Precision + Recall)",
+          "interpretation": "Harmonic mean balancing precision and recall",
+          "importance": "SECONDARY METRIC for model selection"
+        },
+        {
+          "name": "Balanced Accuracy",
+          "formula": "(Sensitivity + Specificity) / 2",
+          "interpretation": "Average of recall for each class, handles imbalance well"
+        },
+        {
+          "name": "ROC AUC",
+          "formula": "Area under Receiver Operating Characteristic curve",
+          "interpretation": "Model's ability to distinguish between classes at various thresholds",
+          "range": "0.5 (random) to 1.0 (perfect)",
+          "typical_value": "0.96-0.98 for this project"
+        },
+        {
+          "name": "PR AUC",
+          "formula": "Area under Precision-Recall curve",
+          "interpretation": "Better than ROC for imbalanced datasets",
+          "importance": "Shows precision-recall tradeoff"
+        },
+        {
+          "name": "False Positive Rate",
+          "formula": "FP / (FP + TN)",
+          "interpretation": "Proportion of legitimate cases incorrectly flagged",
+          "importance": "Affects user experience and operational cost"
+        },
+        {
+          "name": "Confusion Matrix",
+          "structure": "[[TN, FP], [FN, TP]]",
+          "interpretation": "Complete breakdown of prediction outcomes"
+        }
+      ],
+
+      "class_imbalance_handling": {
+        "problem": "Fraud is rare (typically <1% of transactions)",
+        "solutions_implemented": [
+          "class_weight='balanced' - Penalizes mistakes on minority class more heavily",
+          "Stratified splitting - Preserves class distribution in train/test sets",
+          "Recall-focused model selection - Prioritizes catching fraud over precision",
+          "Balanced accuracy metric - Accounts for imbalance in evaluation"
+        ]
+      }
+    }
+  },
+
+  "tasks": {
+    "transaction_fraud_detection": {
+      "description": "Detect fraudulent PaySim mobile-money transactions using user-facing transaction fields",
+      "dataset": {
+        "name": "paysim/PS_20174392719_1491204439457_log.csv",
+        "source": "PaySim synthetic mobile-money transaction dataset",
+        "path": "datasets/paysim/PS_20174392719_1491204439457_log.csv",
+        "rows": 6362620,
+        "columns": 11,
+        "features": {
+          "type": "Transaction type",
+          "amount": "Transaction amount",
+          "oldbalanceOrg": "Sender balance before transaction",
+          "newbalanceOrig": "Sender balance after transaction",
+          "oldbalanceDest": "Receiver balance before transaction",
+          "newbalanceDest": "Receiver balance after transaction",
+          "isFraud": "Target variable (0=legitimate, 1=fraud)"
+        },
+        "class_distribution": {
+          "legitimate": 6354407,
+          "fraud": 8213,
+          "imbalance_ratio": "774:1"
+        }
+      },
+      "algorithms_trained": ["Logistic Regression", "Decision Tree", "Random Forest"],
+      "selected_model": "Random Forest",
+      "model_version": "fraud_random_forest_v1",
+      "performance": {
+        "accuracy": 0.996878,
+        "precision": 0.938551,
+        "recall": 0.985393,
+        "f1_score": 0.961401,
+        "balanced_accuracy": 0.991371,
+        "roc_auc": 0.999018,
+        "pr_auc": 0.992774,
+        "false_positive_rate": 0.00265
+      },
+      "api_endpoint": "/api/v1/predict/transaction",
+      "input_format": {
+        "type": "select: CASH_IN, CASH_OUT, DEBIT, PAYMENT, TRANSFER",
+        "amount": "numeric",
+        "oldbalanceOrg": "numeric",
+        "newbalanceOrig": "numeric",
+        "oldbalanceDest": "numeric",
+        "newbalanceDest": "numeric"
+      }
+    },
+
+    "phishing_url_detection": {
+      "description": "Detect phishing URLs based on URL structure and characteristics",
+      "dataset": {
+        "name": "phishing_links_url/Dataset.csv",
+        "source": "URL phishing dataset",
+        "rows": 116600,
+        "columns": 26,
+        "features": {
+          "url": "Raw URL (not used in model)",
+          "url_len": "Total URL length",
+          "dom": "Domain name (not used in model)",
+          "dom_len": "Domain length",
+          "is_ip": "Whether domain is IP address (0/1)",
+          "tld": "Top-level domain (not used in model)",
+          "tld_len": "TLD length",
+          "subdom_cnt": "Number of subdomains",
+          "letter_cnt": "Number of letters",
+          "digit_cnt": "Number of digits",
+          "special_cnt": "Number of special characters",
+          "eq_cnt": "Number of '=' characters",
+          "qm_cnt": "Number of '?' characters",
+          "amp_cnt": "Number of '&' characters",
+          "dot_cnt": "Number of '.' characters",
+          "dash_cnt": "Number of '-' characters",
+          "under_cnt": "Number of '_' characters",
+          "letter_ratio": "Proportion of letters",
+          "digit_ratio": "Proportion of digits",
+          "spec_ratio": "Proportion of special characters",
+          "is_https": "Whether URL uses HTTPS (0/1)",
+          "slash_cnt": "Number of '/' characters",
+          "entropy": "Shannon entropy (randomness measure)",
+          "path_len": "Path length",
+          "query_len": "Query string length",
+          "label": "Target variable (0=legitimate, 1=phishing)"
+        },
+        "note": "Only numeric features (22 total) are used; raw URL strings are excluded"
+      },
+      "algorithms_trained": ["Logistic Regression", "Decision Tree", "Random Forest"],
+      "selected_model": "Random Forest",
+      "model_version": "phishing_random_forest_v1",
+      "performance": {
+        "accuracy": 0.980301,
+        "precision": 0.945828,
+        "recall": 0.915612,
+        "f1_score": 0.930475,
+        "balanced_accuracy": 0.953396,
+        "roc_auc": 0.992973,
+        "pr_auc": 0.976133,
+        "false_positive_rate": 0.00882
+      },
+      "api_endpoint": "/api/v1/predict/phishing",
+      "input_format": {
+        "url_len": "numeric",
+        "dom_len": "numeric",
+        "is_ip": "binary (0 or 1)",
+        "...": "(22 features total)"
+      },
+      "phishing_indicators": [
+        "IP address instead of domain (is_ip=1)",
+        "No HTTPS (is_https=0)",
+        "Very long URL (url_len > 75)",
+        "Many subdomains (subdom_cnt > 3)",
+        "High entropy (entropy > 4.5)",
+        "Many special characters",
+        "Unusual TLD length"
+      ]
+    }
+  },
+
+  "risk_assessment": {
+    "description": "Predictions include risk levels based on probability thresholds",
+    "levels": {
+      "Low": {
+        "threshold": "probability < 0.30",
+        "interpretation": "Likely legitimate",
+        "recommended_action": "Allow with standard monitoring"
+      },
+      "Medium": {
+        "threshold": "0.30 ≤ probability < 0.70",
+        "interpretation": "Suspicious, requires investigation",
+        "recommended_action": "Flag for review, request additional verification"
+      },
+      "High": {
+        "threshold": "probability ≥ 0.70",
+        "interpretation": "Likely fraud/phishing",
+        "recommended_action": "Block transaction or warn user prominently"
+      }
+    },
+    "disclaimer": "This prediction is a risk assessment, not proof of fraud. Human review is recommended for high-stakes decisions."
+  },
+
+  "api_endpoints": {
+    "base_url": "http://127.0.0.1:8000/api/v1",
+    
+    "endpoints": [
+      {
+        "path": "/health",
+        "method": "GET",
+        "description": "Health check and model status",
+        "response": {
+          "status": "ok",
+          "models": {
+            "fraud": {"state": "ready", "selected_model": "..."},
+            "phishing": {"state": "ready", "selected_model": "..."}
+          }
+        }
+      },
+      {
+        "path": "/datasets",
+        "method": "GET",
+        "description": "List available datasets",
+        "response": {
+          "items": ["array of dataset summaries"]
+        }
+      },
+      {
+        "path": "/datasets/{dataset_id}/summary",
+        "method": "GET",
+        "description": "Get detailed dataset information",
+        "parameters": {
+          "dataset_id": "e.g., 'creditcard.csv' or 'phishing_links_url/Dataset.csv'"
+        }
+      },
+      {
+        "path": "/models/train",
+        "method": "POST",
+        "description": "Train models on specified dataset",
+        "body": {
+          "dataset_id": "creditcard.csv"
+        },
+        "note": "Task (fraud/phishing) is auto-detected from dataset name"
+      },
+      {
+        "path": "/models/status",
+        "method": "GET",
+        "description": "Get training status for all models",
+        "response": {
+          "fraud": {"state": "ready|training|error", "details": "..."},
+          "phishing": {"state": "ready|training|error", "details": "..."}
+        }
+      },
+      {
+        "path": "/models/evaluation",
+        "method": "GET",
+        "description": "Get model evaluation metrics",
+        "parameters": {
+          "task": "fraud or phishing (default: fraud)"
+        },
+        "response": {
+          "selected_model": "...",
+          "models": {"model_name": {"accuracy": 0.0, "other_metrics": "..."}}
+        }
+      },
+      {
+        "path": "/predict/transaction",
+        "method": "POST",
+        "description": "Predict transaction fraud",
+        "body": {
+          "data": {"type": "PAYMENT", "amount": 0, "oldbalanceOrg": 0, "newbalanceOrig": 0, "oldbalanceDest": 0, "newbalanceDest": 0}
+        },
+        "response": {
+          "prediction": "Fraud|Legitimate",
+          "is_fraud": "0|1",
+          "fraud_probability": 0.0,
+          "risk_level": "Low|Medium|High",
+          "model_version": "...",
+          "prediction_id": 123,
+          "created_at": "ISO timestamp"
+        }
+      },
+      {
+        "path": "/predict/phishing",
+        "method": "POST",
+        "description": "Predict phishing URL",
+        "body": {
+          "data": {"url_len": 0, "dom_len": 0, "is_ip": 0, "query_len": 0}
+        },
+        "response": "Same structure as /predict/transaction"
+      },
+      {
+        "path": "/predictions",
+        "method": "GET",
+        "description": "Get paginated prediction history",
+        "parameters": {
+          "page": "integer (default: 1)",
+          "page_size": "integer (default: 20, max: 100)"
+        }
+      },
+      {
+        "path": "/predictions/{id}",
+        "method": "GET",
+        "description": "Get details of specific prediction"
+      },
+      {
+        "path": "/predictions/{id}",
+        "method": "DELETE",
+        "description": "Delete a prediction from history"
+      },
+      {
+        "path": "/analysis/dashboard",
+        "method": "GET",
+        "description": "Get dashboard data (dataset info, model status, recent predictions)"
+      }
+    ]
+  },
+
+  "file_structure": {
+    "root": {
+      "backend/": {
+        "app/": {
+          "main.py": "FastAPI application with all endpoints",
+          "config.py": "Configuration (paths, CORS settings)",
+          "__init__.py": "Package initialization",
+          "services/": {
+            "dataset_service.py": "Dataset loading and analysis",
+            "training_service.py": "Model training and evaluation",
+            "prediction_service.py": "Prediction and history management",
+            "__init__.py": "Service exports"
+          }
+        }
+      },
+      "frontend/": {
+        "index.html": "Dashboard page",
+        "css/": {
+          "style.css": "All styling (responsive, modern design)"
+        },
+        "js/": {
+          "config.js": "API base URL configuration",
+          "api.js": "API client functions",
+          "utils.js": "Utility functions (formatting, escaping)",
+          "dashboard.js": "Dashboard page logic",
+          "analyze.js": "Analyze page logic",
+          "datasets.js": "Datasets page logic",
+          "evaluation.js": "Evaluation page logic",
+          "history.js": "History page logic"
+        },
+        "pages/": {
+          "analyze.html": "Prediction interface",
+          "datasets.html": "Dataset management",
+          "evaluation.html": "Model metrics",
+          "history.html": "Prediction history"
+        }
+      },
+      "datasets/": {
+        "creditcard/": {
+          "creditcard.csv": "Legacy anonymized transaction fraud dataset"
+        },
+        "paysim/": {
+          "PS_20174392719_1491204439457_log.csv": "User-facing PaySim transaction fraud dataset"
+        },
+        "phishing_links_url/": {
+          "Dataset.csv": "Phishing URL dataset"
+        }
+      },
+      "artifacts/": {
+        "selected_model.joblib": "Best fraud model",
+        "metadata.json": "Fraud model metadata",
+        "phishing_selected_model.joblib": "Best phishing model",
+        "phishing_metadata.json": "Phishing model metadata",
+        "...": "Other trained models"
+      },
+      "reports/": {
+        "model_evaluation.json": "Fraud model metrics",
+        "phishing_model_evaluation.json": "Phishing model metrics",
+        "dataset_inspection.json": "Dataset analysis"
+      },
+      "tests/": {
+        "test_api.py": "API endpoint tests"
+      },
+      "app.db": "SQLite database (prediction history)",
+      "requirements.txt": "Python dependencies",
+      "run.py": "Server startup script",
+      "train_phishing_model.py": "Phishing model training script",
+      "test_phishing_prediction.py": "Phishing prediction testing",
+      "README.md": "Project documentation",
+      "PHISHING_DETECTION_GUIDE.md": "Phishing detection guide",
+      "QUICKSTART_PHISHING.md": "Quick start guide"
+    }
+  },
+
+  "dependencies": {
+    "backend": {
+      "fastapi": "Modern web framework for building APIs",
+      "uvicorn": "ASGI server for FastAPI",
+      "pandas": "Data manipulation and analysis",
+      "numpy": "Numerical computing",
+      "scikit-learn": "Machine learning algorithms and tools",
+      "joblib": "Model serialization",
+      "pydantic": "Data validation"
+    },
+    "frontend": {
+      "none": "Pure vanilla JavaScript, no dependencies"
+    }
+  },
+
+  "workflow": {
+    "training_workflow": [
+      "1. User selects dataset from Datasets page",
+      "2. Click 'Train models' button",
+      "3. Backend loads and preprocesses data",
+      "4. Three models trained in sequence",
+      "5. Each model evaluated on test set",
+      "6. Best model selected based on recall + F1",
+      "7. Models saved to artifacts/ folder",
+      "8. Evaluation report saved to reports/",
+      "9. Model status updated to 'ready'",
+      "10. User can now make predictions"
+    ],
+    
+    "prediction_workflow": [
+      "1. User navigates to Analyze page",
+      "2. Selects task (Transaction Fraud or Phishing URL)",
+      "3. Form dynamically loads required features",
+      "4. User enters feature values",
+      "5. Click 'Run risk assessment'",
+      "6. Frontend sends POST request to /predict/transaction or /predict/phishing",
+      "7. Backend validates features against model schema",
+      "8. Model loads from artifacts/",
+      "9. Preprocessor transforms input",
+      "10. Model generates prediction and probability",
+      "11. Risk level assigned based on thresholds",
+      "12. Result stored in database",
+      "13. Response returned to frontend",
+      "14. User sees prediction, risk level, and probability"
+    ]
+  },
+
+  "scalability_and_production_considerations": {
+    "current_limitations": [
+      "Single-threaded model serving (no async model loading)",
+      "In-memory model storage (reloads on restart)",
+      "SQLite not suitable for high concurrency",
+      "No authentication or rate limiting",
+      "No model versioning or A/B testing",
+      "No real-time retraining pipeline"
+    ],
+    
+    "production_enhancements": [
+      "Deploy with Docker and Kubernetes",
+      "Use PostgreSQL or cloud database",
+      "Add Redis for model caching",
+      "Implement JWT authentication",
+      "Add rate limiting and API keys",
+      "Set up monitoring (Prometheus, Grafana)",
+      "Implement logging (ELK stack)",
+      "Add model versioning and rollback",
+      "Set up CI/CD pipeline",
+      "Use load balancer for horizontal scaling",
+      "Implement feature store for consistency",
+      "Add automated retraining on new data"
+    ]
+  },
+
+  "security_considerations": {
+    "current_implementation": [
+      "CORS enabled for localhost only",
+      "Input validation via Pydantic models",
+      "SQL injection prevented (using parameterized queries)",
+      "No sensitive data storage (anonymized features)"
+    ],
+    
+    "production_security": [
+      "Add HTTPS/TLS encryption",
+      "Implement authentication (OAuth2/JWT)",
+      "Add authorization (role-based access)",
+      "Rate limiting per user/API key",
+      "Input sanitization and validation",
+      "Audit logging for predictions",
+      "Data encryption at rest",
+      "Regular security audits",
+      "Dependency vulnerability scanning"
+    ]
+  },
+
+  "future_enhancements": {
+    "features": [
+      "URL feature extraction tool (parse raw URLs automatically)",
+      "Batch prediction API for multiple records",
+      "Model explainability (SHAP values, feature importance)",
+      "Real-time monitoring dashboard",
+      "Email/SMS alerts for high-risk predictions",
+      "Export predictions to CSV/JSON",
+      "Custom threshold configuration per user",
+      "Model retraining scheduler",
+      "Feedback loop for model improvement",
+      "Integration with threat intelligence feeds"
+    ],
+    
+    "advanced_ml": [
+      "Deep learning models (LSTM, Transformer)",
+      "Ensemble of ensembles (stacking)",
+      "Anomaly detection algorithms",
+      "Active learning for labeling",
+      "Transfer learning from pretrained models",
+      "Graph neural networks for transaction networks",
+      "Time series analysis for fraud patterns",
+      "Natural language processing for phishing content"
+    ]
+  },
+
+  "performance_benchmarks": {
+    "training_time": {
+      "fraud_models": "~30-60 seconds on modern CPU",
+      "phishing_models": "~30-60 seconds on modern CPU"
+    },
+    "prediction_time": {
+      "single_prediction": "< 50ms",
+      "batch_100": "< 500ms"
+    },
+    "model_sizes": {
+      "logistic_regression": "~50 KB",
+      "decision_tree": "~500 KB - 2 MB",
+      "random_forest": "~10-50 MB"
+    }
+  },
+
+  "testing": {
+    "unit_tests": "tests/test_api.py - API endpoint tests",
+    "integration_tests": "test_phishing_prediction.py - End-to-end prediction tests",
+    "test_coverage": "Core API endpoints and prediction services",
+    "manual_testing": "Frontend UI tested manually with example data"
+  }
+}

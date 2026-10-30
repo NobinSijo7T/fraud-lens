@@ -1,0 +1,1 @@
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const fmt=n=>new Intl.NumberFormat().format(n);const pct=n=>n==null?'—':`${(n*100).toFixed(1)}%`;

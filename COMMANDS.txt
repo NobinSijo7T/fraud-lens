@@ -1,0 +1,567 @@
+================================================================================
+                    FRAUDLENS - COMMAND REFERENCE
+             Digital Scam and Fraud Analysis System
+================================================================================
+
+TABLE OF CONTENTS
+-----------------
+1. Initial Setup
+2. Starting the Application
+3. Training Models
+4. Testing and Verification
+5. API Testing (cURL)
+6. Database Operations
+7. Development Commands
+8. Troubleshooting
+
+
+================================================================================
+1. INITIAL SETUP
+================================================================================
+
+A. Create Virtual Environment
+------------------------------
+Windows (PowerShell):
+    python -m venv .venv
+    .\.venv\Scripts\Activate.ps1
+
+Windows (Command Prompt):
+    python -m venv .venv
+    .venv\Scripts\activate.bat
+
+Linux/Mac:
+    python3 -m venv .venv
+    source .venv/bin/activate
+
+
+B. Install Dependencies
+-----------------------
+    pip install -r requirements.txt
+
+    # Or install individually:
+    pip install fastapi uvicorn pandas numpy scikit-learn joblib pydantic
+
+
+C. Verify Installation
+----------------------
+    python -c "import fastapi, pandas, sklearn; print('All dependencies installed!')"
+
+
+================================================================================
+2. STARTING THE APPLICATION
+================================================================================
+
+A. Start the Server
+-------------------
+Method 1 (Recommended - using run.py):
+    python run.py
+
+Method 2 (Direct uvicorn):
+    uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
+
+Method 3 (Without reload - production):
+    uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+
+
+B. Access the Application
+--------------------------
+    Frontend (Web UI):
+        http://127.0.0.1:8000
+
+    API Documentation:
+        http://127.0.0.1:8000/docs          (Swagger UI)
+        http://127.0.0.1:8000/redoc         (ReDoc)
+
+    Health Check:
+        http://127.0.0.1:8000/api/v1/health
+
+
+C. Stop the Server
+------------------
+    Press Ctrl + C in the terminal
+
+
+================================================================================
+3. TRAINING MODELS
+================================================================================
+
+A. Train Fraud Detection Model
+-------------------------------
+Method 1 (Via Frontend):
+    1. Open http://127.0.0.1:8000
+    2. Go to "Datasets" page
+    3. Find "creditcard.csv" card
+    4. Click "Train fraud models →"
+    5. Wait for completion
+
+Method 2 (Via Python):
+    python -c "from backend.app.services.training_service import train; print(train('creditcard.csv'))"
+
+Method 3 (Via API - requires server running):
+    curl -X POST http://127.0.0.1:8000/api/v1/models/train ^
+         -H "Content-Type: application/json" ^
+         -d "{\"dataset_id\": \"creditcard.csv\"}"
+
+
+B. Train Phishing Detection Model
+----------------------------------
+Method 1 (Dedicated Script - Recommended):
+    python train_phishing_model.py
+
+Method 2 (Via Python):
+    python -c "from backend.app.services.training_service import train; print(train('phishing_links_url/Dataset.csv', task='phishing'))"
+
+Method 3 (Via Frontend):
+    1. Open http://127.0.0.1:8000
+    2. Go to "Datasets" page
+    3. Find "phishing_links_url/Dataset.csv" card
+    4. Click "Train phishing models →"
+    5. Wait for completion
+
+Method 4 (Via API):
+    curl -X POST http://127.0.0.1:8000/api/v1/models/train ^
+         -H "Content-Type: application/json" ^
+         -d "{\"dataset_id\": \"phishing_links_url/Dataset.csv\"}"
+
+
+C. Check Model Status
+----------------------
+Via Python:
+    python -c "from backend.app.services.training_service import status; import json; print(json.dumps(status(), indent=2))"
+
+Via API:
+    curl http://127.0.0.1:8000/api/v1/models/status
+
+
+D. View Model Evaluation
+-------------------------
+Fraud Model:
+    curl http://127.0.0.1:8000/api/v1/models/evaluation?task=fraud
+
+Phishing Model:
+    curl http://127.0.0.1:8000/api/v1/models/evaluation?task=phishing
+
+Via File:
+    # View fraud evaluation
+    type reports\model_evaluation.json
+
+    # View phishing evaluation
+    type reports\phishing_model_evaluation.json
+
+
+================================================================================
+4. TESTING AND VERIFICATION
+================================================================================
+
+A. Test Phishing Predictions
+-----------------------------
+    python test_phishing_prediction.py
+
+
+B. Run API Tests
+----------------
+    pytest tests/test_api.py
+
+    # Run with verbose output
+    pytest tests/test_api.py -v
+
+    # Run specific test
+    pytest tests/test_api.py::test_health
+
+
+C. Quick Health Check
+----------------------
+    python -c "import requests; print(requests.get('http://127.0.0.1:8000/api/v1/health').json())"
+
+
+D. Test URL Feature Extraction ⭐ NEW!
+---------------------------------------
+    python test_url_extraction.py
+
+    # Test complete URL analysis flow
+    python test_url_api.py
+
+
+E. Test Single Prediction (Python)
+-----------------------------------
+Transaction Fraud:
+    python -c "from backend.app.services import prediction_service; result = prediction_service.predict({'Time': 0, 'V1': -1.5, 'V2': 2.5, 'V3': 1.0, 'V4': 0.5, 'V5': -0.8, 'V6': 1.2, 'V7': -0.3, 'V8': 0.1, 'V9': -0.5, 'V10': 1.8, 'V11': 0.6, 'V12': -1.1, 'V13': -0.4, 'V14': 1.3, 'V15': 0.2, 'V16': -0.9, 'V17': 0.7, 'V18': -0.6, 'V19': 0.4, 'V20': -1.2, 'V21': 0.3, 'V22': -0.7, 'V23': 0.9, 'V24': -0.2, 'V25': 1.1, 'V26': -0.5, 'V27': 0.8, 'V28': -0.1, 'Amount': 100.0}, task='fraud'); print(result['prediction'], '-', result['risk_level'])"
+
+Phishing URL:
+    python -c "from backend.app.services import prediction_service; result = prediction_service.predict({'url_len': 24, 'dom_len': 11, 'is_ip': 0, 'tld_len': 6, 'subdom_cnt': 1, 'letter_cnt': 17, 'digit_cnt': 0, 'special_cnt': 7, 'eq_cnt': 0, 'qm_cnt': 0, 'amp_cnt': 0, 'dot_cnt': 3, 'dash_cnt': 0, 'under_cnt': 0, 'letter_ratio': 0.708333, 'digit_ratio': 0.0, 'spec_ratio': 0.291667, 'is_https': 1, 'slash_cnt': 3, 'entropy': 3.709148, 'path_len': 1, 'query_len': 0}, task='phishing'); print(result['prediction'], '-', result['risk_level'])"
+
+
+================================================================================
+5. API TESTING (cURL)
+================================================================================
+
+A. Health Check
+---------------
+    curl http://127.0.0.1:8000/api/v1/health
+
+
+B. List Datasets
+----------------
+    curl http://127.0.0.1:8000/api/v1/datasets
+
+
+C. Get Dataset Summary
+----------------------
+    curl http://127.0.0.1:8000/api/v1/datasets/creditcard.csv/summary
+
+
+D. Predict Transaction Fraud
+-----------------------------
+    curl -X POST http://127.0.0.1:8000/api/v1/predict/transaction ^
+         -H "Content-Type: application/json" ^
+         -d "{\"data\": {\"Time\": 0, \"V1\": -1.5, \"V2\": 2.5, \"V3\": 1.0, \"V4\": 0.5, \"V5\": -0.8, \"V6\": 1.2, \"V7\": -0.3, \"V8\": 0.1, \"V9\": -0.5, \"V10\": 1.8, \"V11\": 0.6, \"V12\": -1.1, \"V13\": -0.4, \"V14\": 1.3, \"V15\": 0.2, \"V16\": -0.9, \"V17\": 0.7, \"V18\": -0.6, \"V19\": 0.4, \"V20\": -1.2, \"V21\": 0.3, \"V22\": -0.7, \"V23\": 0.9, \"V24\": -0.2, \"V25\": 1.1, \"V26\": -0.5, \"V27\": 0.8, \"V28\": -0.1, \"Amount\": 100.0}}"
+
+
+E. Predict Phishing URL (Manual Features)
+------------------------------------------
+    curl -X POST http://127.0.0.1:8000/api/v1/predict/phishing ^
+         -H "Content-Type: application/json" ^
+         -d "{\"data\": {\"url_len\": 24, \"dom_len\": 11, \"is_ip\": 0, \"tld_len\": 6, \"subdom_cnt\": 1, \"letter_cnt\": 17, \"digit_cnt\": 0, \"special_cnt\": 7, \"eq_cnt\": 0, \"qm_cnt\": 0, \"amp_cnt\": 0, \"dot_cnt\": 3, \"dash_cnt\": 0, \"under_cnt\": 0, \"letter_ratio\": 0.708333, \"digit_ratio\": 0.0, \"spec_ratio\": 0.291667, \"is_https\": 1, \"slash_cnt\": 3, \"entropy\": 3.709148, \"path_len\": 1, \"query_len\": 0}}"
+
+
+E2. Analyze URL (Automatic Feature Extraction) ⭐ NEW!
+-------------------------------------------------------
+    curl -X POST http://127.0.0.1:8000/api/v1/analyze/url ^
+         -H "Content-Type: application/json" ^
+         -d "{\"url\": \"https://www.example.com/path?query=value\"}"
+
+    # Quick test with multiple URLs
+    curl -X POST http://127.0.0.1:8000/api/v1/analyze/url ^
+         -H "Content-Type: application/json" ^
+         -d "{\"url\": \"http://192.168.1.100/login.php\"}"
+
+
+F. Get Prediction History
+--------------------------
+    curl http://127.0.0.1:8000/api/v1/predictions
+
+    # With pagination
+    curl "http://127.0.0.1:8000/api/v1/predictions?page=1&page_size=10"
+
+
+G. Get Specific Prediction
+---------------------------
+    curl http://127.0.0.1:8000/api/v1/predictions/1
+
+
+H. Delete Prediction
+--------------------
+    curl -X DELETE http://127.0.0.1:8000/api/v1/predictions/1
+
+
+I. Get Dashboard Data
+---------------------
+    curl http://127.0.0.1:8000/api/v1/analysis/dashboard
+
+
+================================================================================
+6. DATABASE OPERATIONS
+================================================================================
+
+A. View Database
+----------------
+    sqlite3 app.db "SELECT * FROM predictions LIMIT 5;"
+
+    # View all tables
+    sqlite3 app.db ".tables"
+
+    # View table schema
+    sqlite3 app.db ".schema predictions"
+
+
+B. Count Predictions
+--------------------
+    sqlite3 app.db "SELECT COUNT(*) FROM predictions;"
+
+
+C. View Recent Predictions
+---------------------------
+    sqlite3 app.db "SELECT id, created_at, json_extract(result, '$.prediction') as prediction FROM predictions ORDER BY id DESC LIMIT 10;"
+
+
+D. Clear All Predictions
+-------------------------
+    sqlite3 app.db "DELETE FROM predictions;"
+
+
+E. Backup Database
+------------------
+    copy app.db app.db.backup
+
+    # Or with timestamp
+    powershell -Command "Copy-Item app.db -Destination \"app.db.backup.$(Get-Date -Format 'yyyy-MM-dd_HH-mm-ss')\""
+
+
+F. Restore Database
+-------------------
+    copy app.db.backup app.db
+
+
+================================================================================
+7. DEVELOPMENT COMMANDS
+================================================================================
+
+A. Code Formatting
+------------------
+    # Install formatter
+    pip install black
+
+    # Format all Python files
+    black backend/ tests/ *.py
+
+
+B. Linting
+----------
+    # Install linter
+    pip install flake8
+
+    # Run linter
+    flake8 backend/ tests/ *.py
+
+
+C. Type Checking
+----------------
+    # Install type checker
+    pip install mypy
+
+    # Run type checker
+    mypy backend/
+
+
+D. View Logs
+------------
+    # Uvicorn logs are printed to console
+    # Redirect to file:
+    python run.py > server.log 2>&1
+
+
+E. Generate Requirements
+-------------------------
+    pip freeze > requirements.txt
+
+
+F. Check Package Versions
+--------------------------
+    pip list
+
+
+G. Update Dependencies
+----------------------
+    pip install --upgrade -r requirements.txt
+
+
+================================================================================
+8. TROUBLESHOOTING
+================================================================================
+
+A. Port Already in Use
+-----------------------
+Problem: "Address already in use" error
+
+Solution 1 - Find and kill process:
+    # Windows PowerShell
+    netstat -ano | findstr :8000
+    taskkill /PID <PID> /F
+
+Solution 2 - Use different port:
+    uvicorn backend.app.main:app --host 127.0.0.1 --port 8001
+
+
+B. Module Not Found Error
+--------------------------
+Problem: "ModuleNotFoundError: No module named 'backend'"
+
+Solution:
+    # Make sure you're in project root directory
+    cd "c:\Users\nobin\OneDrive\Documents\Projects\fraud detection"
+    
+    # Ensure virtual environment is activated
+    .\.venv\Scripts\Activate.ps1
+    
+    # Reinstall dependencies
+    pip install -r requirements.txt
+
+
+C. Model Not Found
+------------------
+Problem: "No trained model is available"
+
+Solution:
+    # Train the required model
+    python train_phishing_model.py
+    
+    # Or train fraud model
+    python -c "from backend.app.services.training_service import train; train('creditcard.csv')"
+
+
+D. CORS Error in Browser
+-------------------------
+Problem: "Access to fetch at '...' from origin '...' has been blocked by CORS"
+
+Solution:
+    # CORS is configured in backend/app/config.py
+    # Make sure ORIGIN matches your frontend URL
+
+
+E. Database Locked
+------------------
+Problem: "database is locked"
+
+Solution:
+    # Close any open database connections
+    # Restart the server
+    # If persistent, delete app.db and restart (will lose prediction history)
+
+
+F. Import Error
+---------------
+Problem: "ImportError: cannot import name '...'"
+
+Solution:
+    # Clear Python cache
+    python -c "import shutil; shutil.rmtree('__pycache__', ignore_errors=True)"
+    python -c "import shutil; shutil.rmtree('backend/__pycache__', ignore_errors=True)"
+    
+    # Restart server
+
+
+G. Out of Memory During Training
+---------------------------------
+Problem: Training crashes with memory error
+
+Solution:
+    # Train one model at a time
+    # Reduce dataset size temporarily
+    # Close other applications
+    # Reduce n_estimators in Random Forest
+
+
+H. Permission Denied
+--------------------
+Problem: "PermissionError: [WinError 5] Access is denied"
+
+Solution:
+    # Run PowerShell/Command Prompt as Administrator
+    # Or change file permissions
+    # Check if file is open in another program
+
+
+================================================================================
+9. QUICK REFERENCE - COMMON WORKFLOWS
+================================================================================
+
+A. First Time Setup
+-------------------
+    1. cd "c:\Users\nobin\OneDrive\Documents\Projects\fraud detection"
+    2. python -m venv .venv
+    3. .\.venv\Scripts\Activate.ps1
+    4. pip install -r requirements.txt
+    5. python train_phishing_model.py
+    6. python run.py
+    7. Open http://127.0.0.1:8000
+
+
+B. Daily Development
+--------------------
+    1. cd "c:\Users\nobin\OneDrive\Documents\Projects\fraud detection"
+    2. .\.venv\Scripts\Activate.ps1
+    3. python run.py
+
+
+C. Retrain Models
+-----------------
+    1. Activate virtual environment
+    2. python train_phishing_model.py
+    3. Restart server if running
+
+
+D. Test Changes
+---------------
+    1. Make code changes
+    2. Server auto-reloads (if started with --reload)
+    3. Test in browser or with curl
+    4. Check console for errors
+
+
+E. Deploy to Production
+-----------------------
+    1. Set environment variables
+    2. Use production ASGI server (gunicorn/hypercorn)
+    3. Enable HTTPS
+    4. Add authentication
+    5. Use production database (PostgreSQL)
+    6. Set up monitoring
+
+
+================================================================================
+10. USEFUL KEYBOARD SHORTCUTS
+================================================================================
+
+Server Control:
+    Ctrl + C           - Stop server
+    Ctrl + Z           - Suspend process (Windows)
+
+Terminal:
+    Ctrl + L           - Clear terminal
+    Up/Down Arrow      - Command history
+    Tab                - Autocomplete
+
+Browser DevTools:
+    F12                - Open developer tools
+    Ctrl + Shift + R   - Hard refresh (clear cache)
+    Ctrl + Shift + I   - Open inspector
+
+
+================================================================================
+11. ENVIRONMENT VARIABLES (Optional)
+================================================================================
+
+Set before starting server:
+
+Windows PowerShell:
+    $env:API_PORT = "8001"
+    $env:DATABASE_PATH = "custom_path/app.db"
+
+Windows Command Prompt:
+    set API_PORT=8001
+    set DATABASE_PATH=custom_path/app.db
+
+Linux/Mac:
+    export API_PORT=8001
+    export DATABASE_PATH=custom_path/app.db
+
+
+================================================================================
+12. PERFORMANCE TESTING
+================================================================================
+
+A. Load Testing with Apache Bench
+----------------------------------
+    # Install Apache Bench (ab)
+    # Test health endpoint
+    ab -n 1000 -c 10 http://127.0.0.1:8000/api/v1/health
+
+
+B. Measure Prediction Time
+---------------------------
+    python -c "import time; from backend.app.services import prediction_service; start = time.time(); prediction_service.predict({...}, 'fraud'); print(f'Time: {(time.time()-start)*1000:.2f}ms')"
+
+
+================================================================================
+                        END OF COMMAND REFERENCE
+================================================================================
+
+For more information:
+- README.md - Project overview
+- PHISHING_DETECTION_GUIDE.md - Phishing detection details
+- URL_INPUT_GUIDE.md - URL input feature guide ⭐ NEW!
+- QUICKSTART_PHISHING.md - Quick start guide
+- PROJECT_DOCUMENTATION.json - Technical documentation
+- API Docs: http://127.0.0.1:8000/docs
+
+Support: Check the documentation or review error messages carefully.

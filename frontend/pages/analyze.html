@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Analyze | FraudLens</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header>
+    <a class="brand" href="../index.html"><span>✦</span> FraudLens</a>
+    <nav>
+      <a href="../index.html">Home</a>
+      <a class="active" href="analyze.html">Analyze</a>
+      <a href="history.html">History</a>
+    </nav>
+  </header>
+  <main class="narrow">
+    <p class="eyebrow">MODEL ANALYZER</p>
+    <h1>Assess risk</h1>
+    <p class="lede">Choose a trained task and let FraudLens assess the risk in one step.</p>
+    <div class="panel">
+      <label for="task">Analysis type</label>
+      <select id="task" class="task-select">
+        <option value="fraud">Transaction fraud</option>
+        <option value="phishing">Phishing URL</option>
+      </select>
+    </div>
+    <section id="url-input-section" class="url-analyzer hidden">
+      <h2>Paste a URL to analyze</h2>
+      <p>Use the complete link, including <code>https://</code> when available.</p>
+      <form id="url-form" class="url-form">
+        <label for="url-input">Website URL</label>
+        <div class="url-form-row">
+          <input type="url" id="url-input" placeholder="https://example.com/path?query=value" autocomplete="url" required>
+          <button id="analyze-url-btn" type="submit" class="button">Analyze URL <span>→</span></button>
+        </div>
+      </form>
+    </section>
+    <form id="transaction-form" class="panel form-grid">
+      <div id="fields"></div>
+      <button class="button" type="submit">Run risk assessment <span>→</span></button>
+    </form>
+    <div id="result" class="result hidden" aria-live="polite"></div>
+  </main>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/analyze.js"></script>
+</body>
+</html>

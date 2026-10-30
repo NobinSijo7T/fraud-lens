@@ -1,0 +1,180 @@
+================================================================================
+                    FRAUDLENS - QUICK START GUIDE
+             Transaction Fraud & Phishing URL Detection
+================================================================================
+
+🚀 START THE APPLICATION
+-------------------------
+1. cd "c:\Users\nobin\OneDrive\Documents\Projects\fraud detection"
+2. .\.venv\Scripts\Activate.ps1
+3. python run.py
+4. Open: http://127.0.0.1:8000
+
+
+📊 ANALYZE TRANSACTIONS (Fraud Detection)
+------------------------------------------
+1. Go to: Analyze page
+2. Select: "Transaction fraud"
+3. Load sample: Click "Load Sample Transaction"
+4. Choose: "Legitimate Example" OR "Fraud Example"
+5. Click: "Run risk assessment"
+6. Result: See prediction, risk level, probability
+
+Features: Time, V1-V28 (anonymized PCA), Amount
+Model: Logistic Regression (99.9% accuracy)
+Dataset: 284,807 credit card transactions
+
+
+🔗 ANALYZE URLs (Phishing Detection)
+-------------------------------------
+1. Go to: Analyze page
+2. Select: "Phishing URL"
+3. Paste URL: e.g., http://192.168.1.100/login
+4. Click: "Extract Features"
+5. Click: "Run risk assessment"
+6. Result: See if URL is legitimate or phishing
+
+Features: 22 URL characteristics (auto-extracted)
+Model: Decision Tree (96.5% accuracy)
+Dataset: 116,600 phishing URLs
+
+
+📡 API ENDPOINTS
+----------------
+# Get feature schema
+GET  /api/v1/models/features?task=fraud
+GET  /api/v1/models/features?task=phishing
+
+# Make predictions
+POST /api/v1/predict/transaction
+POST /api/v1/predict/phishing
+POST /api/v1/analyze/url  (URL auto-extraction)
+
+# Check status
+GET  /api/v1/health
+GET  /api/v1/models/status
+GET  /api/v1/models/evaluation?task=fraud
+
+
+🧪 TESTING
+----------
+# Test transaction fraud detection
+python test_transaction_api.py
+
+# Test phishing detection
+python test_phishing_prediction.py
+
+# Test URL extraction
+python test_url_extraction.py
+
+
+📖 DOCUMENTATION
+----------------
+- TRANSACTION_ANALYSIS_GUIDE.md  - Transaction fraud guide
+- URL_INPUT_GUIDE.md              - Phishing detection guide
+- PHISHING_DETECTION_GUIDE.md     - Detailed phishing info
+- PROJECT_DOCUMENTATION.json      - Technical architecture
+- COMMANDS.txt                    - Complete command reference
+
+
+💡 QUICK EXAMPLES
+-----------------
+Transaction (Fraud):
+{
+  "Time": 406,
+  "V1": -2.31, "V2": 1.95, ..., "V28": -0.06,
+  "Amount": 0.77
+}
+Result: Fraud detected (100% confidence)
+
+URL (Phishing):
+http://192.168.1.100/login.php
+Result: Phishing detected (High risk)
+
+
+🎯 SAMPLE DATA
+--------------
+Transaction Fraud:
+  - Legitimate: Amount=149.62, V1=-1.36, normal patterns
+  - Fraud: Amount=0.77, V1=-2.31, suspicious patterns
+
+Phishing URLs:
+  - Legitimate: https://www.github.com/user/repo
+  - Phishing: http://192.168.1.100/login.php
+
+
+📊 MODEL PERFORMANCE
+--------------------
+Transaction Fraud Model:
+  ✓ Accuracy: 99.9%
+  ✓ Recall: 85-90%
+  ✓ Model: Logistic Regression
+  ✓ Features: 30 (anonymized PCA)
+
+Phishing Detection Model:
+  ✓ Accuracy: 96.5%
+  ✓ Recall: 93.3%
+  ✓ Model: Decision Tree
+  ✓ Features: 22 (URL characteristics)
+
+
+🔧 TROUBLESHOOTING
+------------------
+Port in use:
+  netstat -ano | findstr :8000
+  taskkill /PID <PID> /F
+
+Model not trained:
+  Go to Datasets page → Train models
+
+Import errors:
+  .\.venv\Scripts\Activate.ps1
+  pip install -r requirements.txt
+
+
+📁 KEY FILES
+------------
+Backend:
+  backend/app/main.py                    - API endpoints
+  backend/app/services/prediction_service.py  - Predictions
+  backend/app/services/training_service.py    - Model training
+
+Frontend:
+  frontend/pages/analyze.html            - Analysis interface
+  frontend/js/analyze.js                 - Form logic
+  frontend/js/api.js                     - API client
+
+Models:
+  artifacts/selected_model.joblib        - Fraud model
+  artifacts/phishing_selected_model.joblib - Phishing model
+
+
+🌐 URLs
+-------
+Frontend:    http://127.0.0.1:8000
+Dashboard:   http://127.0.0.1:8000/index.html
+Analyze:     http://127.0.0.1:8000/pages/analyze.html
+History:     http://127.0.0.1:8000/pages/history.html
+API Docs:    http://127.0.0.1:8000/docs
+
+
+✅ FEATURES
+-----------
+✓ Transaction fraud detection (99.9% accuracy)
+✓ Phishing URL detection (96.5% accuracy)
+✓ Automatic URL feature extraction
+✓ Sample data loading
+✓ Real-time predictions
+✓ Prediction history
+✓ Professional UI
+✓ Complete API
+✓ Comprehensive documentation
+
+
+🎉 YOU'RE READY!
+----------------
+Start server:  python run.py
+Open browser:  http://127.0.0.1:8000
+Start testing: Load samples and analyze!
+
+================================================================================

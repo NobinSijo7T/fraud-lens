@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+datasets/
+artifacts/*
+reports/*
+!reports/.gitkeep
+app.db
+.env

@@ -1,0 +1,84 @@
+================================================================================
+                    FRAUDLENS - QUICK REFERENCE CARD
+================================================================================
+
+START THE PROJECT (3 COMMANDS)
+------------------------------
+1. .\.venv\Scripts\Activate.ps1
+2. python run.py
+3. Open: http://127.0.0.1:8000
+
+FIRST TIME SETUP (4 COMMANDS)
+------------------------------
+1. python -m venv .venv
+2. .\.venv\Scripts\Activate.ps1
+3. pip install -r requirements.txt
+4. python train_phishing_model.py
+
+TRAIN MODELS
+------------
+Fraud:      python -c "from backend.app.services.training_service import train; train('creditcard.csv')"
+Phishing:   python train_phishing_model.py
+
+CHECK STATUS
+------------
+API:        curl http://127.0.0.1:8000/api/v1/health
+Models:     curl http://127.0.0.1:8000/api/v1/models/status
+
+TEST PREDICTION (cURL)
+----------------------
+Transaction:
+curl -X POST http://127.0.0.1:8000/api/v1/predict/transaction ^
+     -H "Content-Type: application/json" ^
+     -d "{\"data\": {\"Time\": 0, \"V1\": -1.5, ..., \"Amount\": 100.0}}"
+
+Phishing (URL Input): ⭐ NEW!
+curl -X POST http://127.0.0.1:8000/api/v1/analyze/url ^
+     -H "Content-Type: application/json" ^
+     -d "{\"url\": \"https://www.example.com\"}"
+
+IMPORTANT URLS
+--------------
+Frontend:       http://127.0.0.1:8000
+API Docs:       http://127.0.0.1:8000/docs
+Health Check:   http://127.0.0.1:8000/api/v1/health
+
+STOP SERVER
+-----------
+Ctrl + C
+
+TROUBLESHOOTING
+---------------
+Port in use:    netstat -ano | findstr :8000 ; taskkill /PID <PID> /F
+Module error:   .\.venv\Scripts\Activate.ps1 ; pip install -r requirements.txt
+No model:       python train_phishing_model.py
+
+FILES TO READ
+-------------
+URL_INPUT_GUIDE.md              - URL input feature (NEW!) ⭐
+COMMANDS.txt                    - Complete command reference
+PROJECT_DOCUMENTATION.json      - Technical documentation
+PHISHING_DETECTION_GUIDE.md     - Phishing detection guide
+README.md                       - Project overview
+
+MODELS & PERFORMANCE
+--------------------
+Fraud Detection:
+  - Dataset: 284,807 transactions
+  - Model: Logistic Regression
+  - Accuracy: 99.9%
+  - Recall: 85-90%
+
+Phishing Detection:
+  - Dataset: 116,600 URLs
+  - Model: Decision Tree
+  - Accuracy: 96.54%
+  - Recall: 93.34%
+
+RISK LEVELS
+-----------
+Low:    < 30% probability
+Medium: 30-69% probability
+High:   ≥ 70% probability
+
+================================================================================
